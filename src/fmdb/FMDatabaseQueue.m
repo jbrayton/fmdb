@@ -212,28 +212,29 @@ static const void * const kDispatchQueueSpecificKey = &kDispatchQueueSpecificKey
 - (void)beginTransaction:(FMDBTransaction)transaction withBlock:(void (^)(FMDatabase *db, BOOL *rollback))block {
     FMDBRetain(self);
     dispatch_sync(_queue, ^() { 
-        
-        BOOL shouldRollback = NO;
+        @autoreleasepool {
+            BOOL shouldRollback = NO;
 
-        switch (transaction) {
-            case FMDBTransactionExclusive:
-                [[self database] beginTransaction];
-                break;
-            case FMDBTransactionDeferred:
-                [[self database] beginDeferredTransaction];
-                break;
-            case FMDBTransactionImmediate:
-                [[self database] beginImmediateTransaction];
-                break;
-        }
-        
-        block([self database], &shouldRollback);
-        
-        if (shouldRollback) {
-            [[self database] rollback];
-        }
-        else {
-            [[self database] commit];
+            switch (transaction) {
+                case FMDBTransactionExclusive:
+                    [[self database] beginTransaction];
+                    break;
+                case FMDBTransactionDeferred:
+                    [[self database] beginDeferredTransaction];
+                    break;
+                case FMDBTransactionImmediate:
+                    [[self database] beginImmediateTransaction];
+                    break;
+            }
+            
+            block([self database], &shouldRollback);
+            
+            if (shouldRollback) {
+                [[self database] rollback];
+            }
+            else {
+                [[self database] commit];
+            }
         }
     });
     
